@@ -1,7 +1,10 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PaddleController : MonoBehaviour
 {
+    public Transform mirrorPaddle;
+
     private Camera _cam;
     private bool _isDragging;
     private float _dragOffsetX;
@@ -25,9 +28,14 @@ public class PaddleController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        var pointer = Pointer.current;
+        if (pointer == null) return;
+
+        Vector2 screenPos = pointer.position.ReadValue();
+        Vector3 worldPos = _cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 0f));
+
+        if (pointer.press.wasPressedThisFrame)
         {
-            Vector3 worldPos = _cam.ScreenToWorldPoint(Input.mousePosition);
             if (worldPos.y < transform.position.y)
             {
                 _isDragging = true;
@@ -35,18 +43,24 @@ public class PaddleController : MonoBehaviour
             }
         }
 
-        if (Input.GetMouseButtonUp(0))
+        if (pointer.press.wasReleasedThisFrame)
         {
             _isDragging = false;
         }
 
         if (_isDragging)
         {
-            Vector3 worldPos = _cam.ScreenToWorldPoint(Input.mousePosition);
             float targetX = Mathf.Clamp(worldPos.x + _dragOffsetX, _minX, _maxX);
             Vector3 pos = transform.position;
             pos.x = targetX;
             transform.position = pos;
+
+            if (mirrorPaddle != null)
+            {
+                Vector3 mirrorPos = mirrorPaddle.position;
+                mirrorPos.x = targetX;
+                mirrorPaddle.position = mirrorPos;
+            }
         }
     }
 }
