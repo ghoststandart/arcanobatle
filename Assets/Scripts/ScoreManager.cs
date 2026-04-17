@@ -25,14 +25,20 @@ public class ScoreManager : MonoBehaviour
 
     public void AddTopScore()
     {
-        if (_gameEnded) return;
+        if (_gameEnded)
+        {
+            return;
+        }
         topScore++;
         CheckWin();
     }
 
     public void AddBottomScore()
     {
-        if (_gameEnded) return;
+        if (_gameEnded)
+        {
+            return;
+        }
         bottomScore++;
         CheckWin();
     }

@@ -271,6 +271,8 @@ GameObject:
   - component: {fileID: 519420030}
   - component: {fileID: 519420033}
   - component: {fileID: 519420034}
+  - component: {fileID: 519420035}
+  - component: {fileID: 519420036}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -422,8 +424,43 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
   topScore: 0
   bottomScore: 0
+  winningScore: 10
   scoreWorldPos: {x: 0, y: 9.5, z: 0}
   fontSize: 36
+--- !u!114 &519420035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ac552c660d484da7b3e7692181701b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BrickSpawner
+  minInterval: 3
+  maxInterval: 7
+  yRangeHalf: 2.5
+  brickSize: 0.4
+  brickSpeed: 2
+  minHealth: 1
+  maxHealth: 3
+  firstSpawnDelay: 5
+--- !u!114 &519420036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 179ab1b40a0384e279070a8cc04098cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpeedDisplay
+  worldPosition: {x: 7, y: 0, z: 0}
+  fontSize: 22
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -608,7 +645,7 @@ Transform:
   m_GameObject: {fileID: 715106788}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -6, z: 0}
+  m_LocalPosition: {x: 0, y: -8, z: 0}
   m_LocalScale: {x: 3, y: 0.4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -671,6 +708,7 @@ GameObject:
   - component: {fileID: 1485383661}
   - component: {fileID: 1485383660}
   - component: {fileID: 1485383659}
+  - component: {fileID: 1485383662}
   m_Layer: 0
   m_Name: PaddleTop
   m_TagString: Untagged
@@ -792,12 +830,28 @@ Transform:
   m_GameObject: {fileID: 1485383658}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 6, z: 0}
+  m_LocalPosition: {x: 0, y: 8, z: 0}
   m_LocalScale: {x: 3, y: 0.4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1485383662
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485383658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d994a541ae28d4a96987f67c988cd697, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AIPaddleController
+  maxMoveSpeed: 12
+  minReactionDelay: 0.07
+  maxReactionDelay: 0.3
+  reactionJitterInterval: 1.5
 --- !u!1 &1712600980
 GameObject:
   m_ObjectHideFlags: 0
@@ -830,7 +884,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed916504cea664ef9a0d357d0bae0c96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallController
-  speed: 8
+  startSpeed: 8
+  maxSpeed: 20
+  accelerationPerSecond: 0.5
 --- !u!50 &1712600982
 Rigidbody2D:
   serializedVersion: 5

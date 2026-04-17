@@ -33,7 +33,9 @@ public class GameSetup : MonoBehaviour
         foreach (var sr in FindObjectsByType<SpriteRenderer>())
         {
             if (sr.sprite == null)
+            {
                 sr.sprite = _whiteSquare;
+            }
         }
     }
 
@@ -50,23 +52,39 @@ public class GameSetup : MonoBehaviour
         foreach (string paddleName in new[] { "Paddle", "PaddleTop" })
         {
             var go = GameObject.Find(paddleName);
-            if (go == null) continue;
+            if (go == null)
+            {
+                continue;
+            }
 
             var box = go.GetComponent<BoxCollider2D>();
-            if (box != null) Destroy(box);
+            if (box != null)
+            {
+                Destroy(box);
+            }
 
             var capsule = go.GetComponent<CapsuleCollider2D>();
-            if (capsule != null) Destroy(capsule);
+            if (capsule != null)
+            {
+                Destroy(capsule);
+            }
 
             var polygon = go.GetComponent<PolygonCollider2D>();
-            if (polygon == null) polygon = go.AddComponent<PolygonCollider2D>();
+            if (polygon == null)
+            {
+                polygon = go.AddComponent<PolygonCollider2D>();
+            }
             polygon.points = ellipsePoints;
             polygon.offset = Vector2.zero;
 
             if (go.GetComponent<LineRenderer>() == null)
+            {
                 go.AddComponent<LineRenderer>();
+            }
             if (go.GetComponent<EllipseOutlineDrawer>() == null)
+            {
                 go.AddComponent<EllipseOutlineDrawer>();
+            }
         }
     }
 
@@ -75,7 +93,10 @@ public class GameSetup : MonoBehaviour
         foreach (string wallName in new[] { "WallLeft", "WallRight" })
         {
             var go = GameObject.Find(wallName);
-            if (go == null) continue;
+            if (go == null)
+            {
+                continue;
+            }
 
             var box = go.GetComponent<BoxCollider2D>();
             if (box != null)
@@ -89,7 +110,10 @@ public class GameSetup : MonoBehaviour
     void SetupBallPhysics()
     {
         var ball = GameObject.Find("Ball");
-        if (ball == null) return;
+        if (ball == null)
+        {
+            return;
+        }
 
         var rb = ball.GetComponent<Rigidbody2D>();
         if (rb != null)
@@ -115,12 +139,13 @@ public class GameSetup : MonoBehaviour
     void LinkPaddles()
     {
         var paddle = GameObject.Find("Paddle");
-        var paddleTop = GameObject.Find("PaddleTop");
-        if (paddle != null && paddleTop != null)
+        if (paddle != null)
         {
             var controller = paddle.GetComponent<PaddleController>();
             if (controller != null)
-                controller.mirrorPaddle = paddleTop.transform;
+            {
+                controller.mirrorPaddle = null;
+            }
         }
     }
 }

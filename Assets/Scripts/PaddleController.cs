@@ -29,7 +29,10 @@ public class PaddleController : MonoBehaviour
     void Update()
     {
         var pointer = Pointer.current;
-        if (pointer == null) return;
+        if (pointer == null)
+        {
+            return;
+        }
 
         Vector2 screenPos = pointer.position.ReadValue();
         Vector3 worldPos = _cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 0f));
