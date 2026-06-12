@@ -7,6 +7,10 @@ public class AIPaddleController : MonoBehaviour
     public float maxReactionDelay = 0.3f;
     public float reactionJitterInterval = 1.5f;
 
+    [Tooltip("Matches PaddleController.edgeOverhang for visual symmetry. 0 = paddle fully on-screen, 0.5 = half off-screen.")]
+    [Range(0f, 1f)]
+    public float edgeOverhang = 0.5f;
+
     private Camera _cam;
     private Transform _ball;
     private float _paddleHalfWidth;
@@ -25,8 +29,9 @@ public class AIPaddleController : MonoBehaviour
         _cam = Camera.main;
         _paddleHalfWidth = transform.localScale.x / 2f;
         float camHalfWidth = _cam.orthographicSize * _cam.aspect;
-        _minX = -camHalfWidth + _paddleHalfWidth;
-        _maxX = camHalfWidth - _paddleHalfWidth;
+        float allowed = _paddleHalfWidth * (1f - edgeOverhang);
+        _minX = -camHalfWidth + allowed;
+        _maxX = camHalfWidth - allowed;
 
         var ballGO = GameObject.Find("Ball");
         if (ballGO != null)

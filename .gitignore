@@ -51,3 +51,7 @@ ehthumbs.db
 # Gradle
 /ExportedObj/
 .gradle/
+
+# Claude Code (worktrees, skills, etc.)
+/.claude/
+
