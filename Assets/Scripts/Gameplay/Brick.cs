@@ -7,6 +7,9 @@ public class Brick : MonoBehaviour
     public Vector2 direction = Vector2.right;
     public float powerUpDropChance = 0.5f;
 
+    [Tooltip("False when the brick is part of a BrickCluster — the cluster moves and bounces the whole formation instead.")]
+    public bool selfMove = true;
+
     private Rigidbody2D _rb;
     private SpriteRenderer _sr;
     private float _leftBound;
@@ -23,6 +26,11 @@ public class Brick : MonoBehaviour
     void Start()
     {
         UpdateColor();
+
+        if (!selfMove)
+        {
+            return;
+        }
 
         float halfSize = transform.localScale.x / 2f;
         var wallLeft = GameObject.Find("WallLeft");
@@ -44,6 +52,11 @@ public class Brick : MonoBehaviour
 
     void Update()
     {
+        if (!selfMove)
+        {
+            return;
+        }
+
         Vector3 pos = transform.position;
         Vector2 vel = _rb.linearVelocity;
 
@@ -101,7 +114,7 @@ public class Brick : MonoBehaviour
 
         GameObject go = new GameObject("PowerUp");
         go.transform.position = transform.position;
-        go.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+        go.transform.localScale = new Vector3(0.33f, 0.33f, 1f);
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = _powerUpSprite;
