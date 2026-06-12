@@ -14,7 +14,7 @@ public class GameSetup : MonoBehaviour
 
         CreateWhiteSprite();
         AssignSprites();
-        SetupPaddleColliders();
+        SetupPaddleSegments();
         SetupWallColliders();
         SetupBallPhysics();
         LinkPaddles();
@@ -39,16 +39,8 @@ public class GameSetup : MonoBehaviour
         }
     }
 
-    void SetupPaddleColliders()
+    void SetupPaddleSegments()
     {
-        int ellipseSegments = 32;
-        Vector2[] ellipsePoints = new Vector2[ellipseSegments];
-        for (int i = 0; i < ellipseSegments; i++)
-        {
-            float angle = 2f * Mathf.PI * i / ellipseSegments;
-            ellipsePoints[i] = new Vector2(Mathf.Cos(angle) * 0.5f, Mathf.Sin(angle) * 0.5f);
-        }
-
         foreach (string paddleName in new[] { "Paddle", "PaddleTop" })
         {
             var go = GameObject.Find(paddleName);
@@ -57,34 +49,24 @@ public class GameSetup : MonoBehaviour
                 continue;
             }
 
-            var box = go.GetComponent<BoxCollider2D>();
-            if (box != null)
+            foreach (var col in go.GetComponents<Collider2D>())
             {
-                Destroy(box);
+                Destroy(col);
             }
 
-            var capsule = go.GetComponent<CapsuleCollider2D>();
-            if (capsule != null)
+            // The root sprite is replaced by the segment cubes.
+            var sr = go.GetComponent<SpriteRenderer>();
+            if (sr != null)
             {
-                Destroy(capsule);
+                sr.enabled = false;
             }
 
-            var polygon = go.GetComponent<PolygonCollider2D>();
-            if (polygon == null)
+            var health = go.GetComponent<PaddleHealth>();
+            if (health == null)
             {
-                polygon = go.AddComponent<PolygonCollider2D>();
+                health = go.AddComponent<PaddleHealth>();
             }
-            polygon.points = ellipsePoints;
-            polygon.offset = Vector2.zero;
-
-            if (go.GetComponent<LineRenderer>() == null)
-            {
-                go.AddComponent<LineRenderer>();
-            }
-            if (go.GetComponent<EllipseOutlineDrawer>() == null)
-            {
-                go.AddComponent<EllipseOutlineDrawer>();
-            }
+            health.Build(_whiteSquare);
         }
     }
 

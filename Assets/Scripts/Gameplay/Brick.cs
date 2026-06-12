@@ -112,13 +112,15 @@ public class Brick : MonoBehaviour
             _powerUpSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
         }
 
+        PowerUpType type = Random.value > 0.5f ? PowerUpType.RepairPaddle : PowerUpType.SpeedBoost;
+
         GameObject go = new GameObject("PowerUp");
         go.transform.position = transform.position;
         go.transform.localScale = new Vector3(0.33f, 0.33f, 1f);
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = _powerUpSprite;
-        sr.color = new Color(0.3f, 1f, 0.4f);
+        sr.color = type == PowerUpType.SpeedBoost ? new Color(0.3f, 1f, 0.4f) : new Color(1f, 0.4f, 0.9f);
         sr.sortingOrder = 5;
 
         var rb = go.AddComponent<Rigidbody2D>();
@@ -130,7 +132,8 @@ public class Brick : MonoBehaviour
         col.size = Vector2.one;
         col.isTrigger = true;
 
-        go.AddComponent<PowerUp>();
+        var powerUp = go.AddComponent<PowerUp>();
+        powerUp.type = type;
     }
 
     void UpdateColor()

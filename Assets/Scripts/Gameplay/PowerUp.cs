@@ -2,7 +2,8 @@ using UnityEngine;
 
 public enum PowerUpType
 {
-    SpeedBoost
+    SpeedBoost,
+    RepairPaddle
 }
 
 public class PowerUp : MonoBehaviour
@@ -11,6 +12,7 @@ public class PowerUp : MonoBehaviour
     public float fallSpeed = 2f;
     public float speedBoostAmount = 5f;
     public float speedBoostDuration = 5f;
+    public int repairLives = 10;
 
     private float _topBound;
     private float _bottomBound;
@@ -36,16 +38,19 @@ public class PowerUp : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.name != "Paddle" && other.gameObject.name != "PaddleTop")
+        // The paddle is made of segment cubes, so the trigger touches a child
+        // collider — look for the paddle root component in the parents.
+        var paddleHealth = other.GetComponentInParent<PaddleHealth>();
+        if (paddleHealth == null)
         {
             return;
         }
 
-        Apply();
+        Apply(paddleHealth);
         Destroy(gameObject);
     }
 
-    void Apply()
+    void Apply(PaddleHealth catcher)
     {
         switch (type)
         {
@@ -60,6 +65,11 @@ public class PowerUp : MonoBehaviour
                         ballCtrl.ApplySpeedBoost(speedBoostAmount, speedBoostDuration);
                     }
                 }
+                break;
+            }
+            case PowerUpType.RepairPaddle:
+            {
+                catcher.RestoreRandom(repairLives);
                 break;
             }
         }
