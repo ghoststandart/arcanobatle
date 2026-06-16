@@ -55,3 +55,6 @@ ehthumbs.db
 # Claude Code (worktrees, skills, etc.)
 /.claude/
 
+
+# Unity batch build log
+build-device.log

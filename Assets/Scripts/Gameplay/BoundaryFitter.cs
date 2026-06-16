@@ -14,7 +14,7 @@ public class BoundaryFitter : MonoBehaviour
     public Transform wallRight;
 
     [Tooltip("Distance from the camera edge. Positive = walls sit inside the visible area. Negative = walls are pushed off-screen (only the inner edge touches the view).")]
-    public float inset = -0.2f;
+    public float inset = 0f;
 
     private Camera _cam;
 

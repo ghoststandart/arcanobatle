@@ -116,6 +116,11 @@ public class GameSetup : MonoBehaviour
             mat.friction = 0f;
             col.sharedMaterial = mat;
         }
+
+        if (ball.GetComponent<SpriteSheetAnimator>() == null)
+        {
+            ball.AddComponent<SpriteSheetAnimator>();
+        }
     }
 
     void LinkPaddles()

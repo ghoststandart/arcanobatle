@@ -69,6 +69,67 @@ public static class BuildIOS
         EditorApplication.Exit(0);
     }
 
+    public static void BuildForDevice()
+    {
+        var outputPath = GetArg("-outputPath") ?? Path.Combine(Directory.GetCurrentDirectory(), "Builds/iOS-Device");
+        var bundleId = GetArg("-bundleId") ?? "com.raman.arcanobatle";
+        var teamId = GetArg("-teamId");
+
+        Directory.CreateDirectory(outputPath);
+
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.iOS, bundleId);
+        PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
+        PlayerSettings.iOS.targetOSVersionString = "15.0";
+        PlayerSettings.iOS.appleEnableAutomaticSigning = true;
+        if (!string.IsNullOrEmpty(teamId))
+        {
+            PlayerSettings.iOS.appleDeveloperTeamID = teamId;
+        }
+        PlayerSettings.SetArchitecture(NamedBuildTarget.iOS, 1);
+        PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
+
+        // Portrait-only for iOS.
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+        PlayerSettings.allowedAutorotateToPortrait = true;
+        PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+        PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+        PlayerSettings.allowedAutorotateToLandscapeRight = false;
+
+        var scenes = EditorBuildSettings.scenes
+            .Where(s => s.enabled)
+            .Select(s => s.path)
+            .ToArray();
+
+        if (scenes.Length == 0)
+        {
+            Debug.LogError("[BuildIOS] No enabled scenes in EditorBuildSettings.");
+            EditorApplication.Exit(1);
+            return;
+        }
+
+        var options = new BuildPlayerOptions
+        {
+            scenes = scenes,
+            locationPathName = outputPath,
+            target = BuildTarget.iOS,
+            targetGroup = BuildTargetGroup.iOS,
+            options = BuildOptions.None,
+        };
+
+        Debug.Log($"[BuildIOS] Building device Xcode project to {outputPath} with bundleId {bundleId}");
+        var report = BuildPipeline.BuildPlayer(options);
+
+        if (report.summary.result != BuildResult.Succeeded)
+        {
+            Debug.LogError($"[BuildIOS] Failed: {report.summary.result} ({report.summary.totalErrors} errors)");
+            EditorApplication.Exit(1);
+            return;
+        }
+
+        Debug.Log($"[BuildIOS] Success: {report.summary.totalSize} bytes in {report.summary.totalTime}. Open {outputPath}/Unity-iPhone.xcodeproj, pick your Team and press Run.");
+        EditorApplication.Exit(0);
+    }
+
     private static void SwapSimulatorFrameworksToUniversal(string outputPath)
     {
         string editorRoot = Path.GetDirectoryName(Path.GetDirectoryName(EditorApplication.applicationPath));
