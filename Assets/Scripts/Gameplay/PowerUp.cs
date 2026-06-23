@@ -18,6 +18,12 @@ public class PowerUp : MonoBehaviour
     private float _bottomBound;
     private Vector2 _direction = Vector2.down;
 
+    /// <summary>Vertical travel direction (up or down). Used by the AI to pick catchable drops.</summary>
+    public Vector2 Direction
+    {
+        get { return _direction; }
+    }
+
     void Start()
     {
         float camSize = Camera.main.orthographicSize;

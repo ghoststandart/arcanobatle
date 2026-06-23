@@ -11,8 +11,13 @@ public class AIPaddleController : MonoBehaviour
     [Range(0f, 1f)]
     public float edgeOverhang = 0.5f;
 
+    [Tooltip("When the ball is moving away, leave the goal and go grab incoming power-ups.")]
+    public bool chasePowerUps = true;
+
     private Camera _cam;
+    private PaddleHealth _health;
     private Transform _ball;
+    private Rigidbody2D _ballRb;
     private float _paddleHalfWidth;
     private float _minX;
     private float _maxX;
@@ -27,6 +32,7 @@ public class AIPaddleController : MonoBehaviour
     void Start()
     {
         _cam = Camera.main;
+        _health = GetComponent<PaddleHealth>();
         _paddleHalfWidth = transform.localScale.x / 2f;
         float camHalfWidth = _cam.orthographicSize * _cam.aspect;
         float allowed = _paddleHalfWidth * (1f - edgeOverhang);
@@ -37,6 +43,7 @@ public class AIPaddleController : MonoBehaviour
         if (ballGO != null)
         {
             _ball = ballGO.transform;
+            _ballRb = ballGO.GetComponent<Rigidbody2D>();
         }
 
         _targetX = transform.position.x;
@@ -56,7 +63,11 @@ public class AIPaddleController : MonoBehaviour
             PickNewDelay();
         }
 
-        _bufferedTargetX = _ball.position.x;
+        float coverX = ChooseTargetX();
+        // Aim the center of the longest intact piece at the ball — not an edge.
+        _bufferedTargetX = _health != null
+            ? _health.SegmentAlignedCenter(coverX)
+            : coverX;
         _bufferTimer += Time.deltaTime;
         if (_bufferTimer >= _currentDelay)
         {
@@ -75,5 +86,48 @@ public class AIPaddleController : MonoBehaviour
     {
         _currentDelay = Random.Range(minReactionDelay, maxReactionDelay);
         _nextJitterTime = Time.time + reactionJitterInterval;
+    }
+
+    // Defend (track the ball) only while it is both heading toward this paddle
+    // AND already on this paddle's side; otherwise go chase a power-up that's
+    // drifting toward this side. While the ball is on the opponent's half there
+    // is time to leave the goal and grab one. Falls back to the ball's x when
+    // there's nothing to grab.
+    float ChooseTargetX()
+    {
+        float toMe = Mathf.Sign(transform.position.y);
+        bool ballComingToMe = _ballRb != null && _ballRb.linearVelocity.y * toMe > 0f;
+        bool ballOnMySide = _ball.position.y * toMe > 0f;
+        bool mustDefend = ballComingToMe && ballOnMySide;
+
+        if (mustDefend || !chasePowerUps)
+        {
+            return _ball.position.x;
+        }
+
+        PowerUp target = FindIncomingPowerUp(toMe);
+        return target != null ? target.transform.position.x : _ball.position.x;
+    }
+
+    PowerUp FindIncomingPowerUp(float toMe)
+    {
+        PowerUp[] powerUps = FindObjectsByType<PowerUp>(FindObjectsSortMode.None);
+        PowerUp best = null;
+        float bestDist = float.MaxValue;
+        foreach (PowerUp pu in powerUps)
+        {
+            // Only ones drifting toward this paddle can actually be caught.
+            if (pu.Direction.y * toMe <= 0f)
+            {
+                continue;
+            }
+            float dist = Mathf.Abs(pu.transform.position.x - transform.position.x);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = pu;
+            }
+        }
+        return best;
     }
 }
