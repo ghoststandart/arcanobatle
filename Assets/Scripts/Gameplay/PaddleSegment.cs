@@ -15,7 +15,9 @@ public class PaddleSegment : MonoBehaviour
     private BoxCollider2D _col;
 
     private static readonly Color FullColor = Color.white;
-    private static readonly Color DamagedColor = new Color(1f, 0.25f, 0.2f);
+    // Warm amber rather than harsh red, so damage reads as a gradient and
+    // matches the brick damage colours.
+    private static readonly Color DamagedColor = new Color(1f, 0.72f, 0.38f);
 
     public bool IsDestroyed
     {
@@ -24,7 +26,9 @@ public class PaddleSegment : MonoBehaviour
 
     void Awake()
     {
-        _sr = GetComponent<SpriteRenderer>();
+        // The sprite lives on a child "Skin" object so the sliced paddle texture
+        // can fill the segment without the segment's own scale distorting it.
+        _sr = GetComponentInChildren<SpriteRenderer>();
         _col = GetComponent<BoxCollider2D>();
     }
 

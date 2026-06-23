@@ -66,7 +66,8 @@ public class GameSetup : MonoBehaviour
             {
                 health = go.AddComponent<PaddleHealth>();
             }
-            health.Build(_whiteSquare);
+            Texture2D paddleTex = Resources.Load<Texture2D>("paddle");
+            health.Build(paddleTex, _whiteSquare);
         }
     }
 
@@ -119,7 +120,17 @@ public class GameSetup : MonoBehaviour
 
         if (ball.GetComponent<SpriteSheetAnimator>() == null)
         {
-            ball.AddComponent<SpriteSheetAnimator>();
+            var anim = ball.AddComponent<SpriteSheetAnimator>();
+            // The macrofag sheet is a single row of 6 centred cells (the broken
+            // 7th cell from the source art was dropped when the sheet was built).
+            anim.resourceName = "macrofag";
+            anim.columns = 6;
+            anim.rows = 1;
+            anim.frameCount = 6;
+            // Cells are 240px; ~85 ppu keeps it roughly the size of the old
+            // Pac-Man frames (280px at 100 ppu).
+            anim.pixelsPerUnit = 85f;
+            anim.faceVelocity = true;
         }
     }
 
