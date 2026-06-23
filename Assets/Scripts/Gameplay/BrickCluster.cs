@@ -1,18 +1,29 @@
 using UnityEngine;
 
 /// <summary>
-/// Moves a group of child bricks horizontally as a single formation and
-/// reverses the whole group when its outer edge touches a side wall.
-/// Individual bricks still take hits and die on their own; the cluster
-/// destroys itself when no bricks remain.
+/// Moves a group of child bricks as a single formation and reverses it at the
+/// arena edges. By default it only travels horizontally and bounces off the
+/// side walls. When <see cref="fallSpeed"/> is set it also drifts vertically,
+/// bouncing off bounds placed just inside the paddles so it never touches them.
+/// Individual bricks still take hits and die on their own; the cluster destroys
+/// itself when no bricks remain.
 /// </summary>
 public class BrickCluster : MonoBehaviour
 {
     public float speed = 2f;
     public Vector2 direction = Vector2.right;
 
+    [Tooltip("Downward drift speed. 0 = horizontal only. When > 0 the cluster also bounces vertically inside the paddles so it never hits them.")]
+    public float fallSpeed = 0f;
+
+    [Tooltip("Gap kept between the vertical bounce bounds and the paddles.")]
+    public float paddleClearance = 0.5f;
+
     private float _leftBound;
     private float _rightBound;
+    private float _topBound;
+    private float _bottomBound;
+    private int _vDir = -1; // start drifting down
 
     void Start()
     {
@@ -29,6 +40,23 @@ public class BrickCluster : MonoBehaviour
             _leftBound = -camHalfW;
             _rightBound = camHalfW;
         }
+
+        float camHalfH = Camera.main.orthographicSize;
+        _topBound = camHalfH;
+        _bottomBound = -camHalfH;
+        if (fallSpeed > 0f)
+        {
+            var paddleTop = GameObject.Find("PaddleTop");
+            var paddleBottom = GameObject.Find("Paddle");
+            if (paddleTop != null)
+            {
+                _topBound = paddleTop.transform.position.y - paddleTop.transform.localScale.y - paddleClearance;
+            }
+            if (paddleBottom != null)
+            {
+                _bottomBound = paddleBottom.transform.position.y + paddleBottom.transform.localScale.y + paddleClearance;
+            }
+        }
     }
 
     void Update()
@@ -40,15 +68,28 @@ public class BrickCluster : MonoBehaviour
             return;
         }
 
-        transform.position += (Vector3)(direction.normalized * speed * Time.deltaTime);
+        Vector3 velocity = (Vector3)(direction.normalized * speed);
+        if (fallSpeed > 0f)
+        {
+            velocity += Vector3.up * (_vDir * fallSpeed);
+        }
+        transform.position += velocity * Time.deltaTime;
 
         float minX = float.MaxValue;
         float maxX = float.MinValue;
+        float minY = float.MaxValue;
+        float maxY = float.MinValue;
         foreach (Brick brick in bricks)
         {
-            float half = brick.transform.localScale.x / 2f;
-            minX = Mathf.Min(minX, brick.transform.position.x - half);
-            maxX = Mathf.Max(maxX, brick.transform.position.x + half);
+            var box = brick.GetComponent<BoxCollider2D>();
+            // The brick transform is unscaled (its visual lives on a scaled child),
+            // so the real cell size comes from the collider, not transform.localScale.
+            float halfW = box != null ? box.size.x * brick.transform.lossyScale.x / 2f : 0f;
+            float halfH = box != null ? box.size.y * brick.transform.lossyScale.y / 2f : 0f;
+            minX = Mathf.Min(minX, brick.transform.position.x - halfW);
+            maxX = Mathf.Max(maxX, brick.transform.position.x + halfW);
+            minY = Mathf.Min(minY, brick.transform.position.y - halfH);
+            maxY = Mathf.Max(maxY, brick.transform.position.y + halfH);
         }
 
         if (minX <= _leftBound && direction.x < 0f)
@@ -58,6 +99,18 @@ public class BrickCluster : MonoBehaviour
         else if (maxX >= _rightBound && direction.x > 0f)
         {
             direction = Vector2.left;
+        }
+
+        if (fallSpeed > 0f)
+        {
+            if (minY <= _bottomBound && _vDir < 0)
+            {
+                _vDir = 1;
+            }
+            else if (maxY >= _topBound && _vDir > 0)
+            {
+                _vDir = -1;
+            }
         }
     }
 }

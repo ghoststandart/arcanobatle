@@ -3,6 +3,16 @@ using UnityEngine;
 public class Brick : MonoBehaviour
 {
     public int health = 1;
+
+    [Tooltip("Highest health this brick was spawned with — used to map current health onto the colour gradient.")]
+    public int maxHealth = 2;
+
+    [Tooltip("Tint at full health (multiplies the microbe skin — white keeps its natural colour).")]
+    public Color fullHealthColor = Color.white;
+
+    [Tooltip("Tint at one hit from death — the skin shifts towards this warm amber as it takes damage.")]
+    public Color lowHealthColor = new Color(1f, 0.72f, 0.38f);
+
     public float speed = 2f;
     public Vector2 direction = Vector2.right;
     public float powerUpDropChance = 0.5f;
@@ -20,7 +30,9 @@ public class Brick : MonoBehaviour
     void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
-        _sr = GetComponent<SpriteRenderer>();
+        // The visual sprite lives on a child "Skin" object so it can be drawn
+        // larger than the brick's collider.
+        _sr = GetComponentInChildren<SpriteRenderer>();
     }
 
     void Start()
@@ -138,17 +150,14 @@ public class Brick : MonoBehaviour
 
     void UpdateColor()
     {
-        if (health >= 3)
+        if (_sr == null)
         {
-            _sr.color = new Color(0.85f, 0.6f, 0.1f);
+            return;
         }
-        else if (health == 2)
-        {
-            _sr.color = new Color(1f, 0.85f, 0.2f);
-        }
-        else
-        {
-            _sr.color = new Color(1f, 1f, 0.55f);
-        }
+
+        // Map current health onto a smooth gradient: full health -> fullHealthColor,
+        // one hit from death -> lowHealthColor. Single-HP bricks read as "low".
+        float t = maxHealth > 1 ? Mathf.Clamp01((health - 1f) / (maxHealth - 1f)) : 0f;
+        _sr.color = Color.Lerp(lowHealthColor, fullHealthColor, t);
     }
 }
