@@ -889,9 +889,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed916504cea664ef9a0d357d0bae0c96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallController
-  startSpeed: 8
-  maxSpeed: 20
-  accelerationPerSecond: 0.5
+  startSpeed: 4
+  maxSpeed: 30
+  accelerationPerSecond: 0.25
 --- !u!50 &1712600982
 Rigidbody2D:
   serializedVersion: 5
