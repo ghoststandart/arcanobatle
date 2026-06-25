@@ -30,6 +30,30 @@ public class PowerUp : MonoBehaviour
         _topBound = camSize + 1f;
         _bottomBound = -camSize - 1f;
         _direction = Random.value > 0.5f ? Vector2.down : Vector2.up;
+        ApplyIcon();
+    }
+
+    // Replaces the placeholder coloured square with this power-up's icon
+    // (Resources/Powerups/{speed,repair}). Falls back silently to whatever the
+    // spawner set if the texture is missing.
+    void ApplyIcon()
+    {
+        var sr = GetComponent<SpriteRenderer>();
+        if (sr == null)
+        {
+            return;
+        }
+
+        string resource = type == PowerUpType.SpeedBoost ? "Powerups/speed" : "Powerups/repair";
+        Texture2D tex = Resources.Load<Texture2D>(resource);
+        if (tex == null)
+        {
+            return;
+        }
+
+        float pixelsPerUnit = Mathf.Max(tex.width, tex.height);
+        sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), pixelsPerUnit);
+        sr.color = Color.white;
     }
 
     void Update()
