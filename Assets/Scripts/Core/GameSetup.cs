@@ -81,6 +81,14 @@ public class GameSetup : MonoBehaviour
                 continue;
             }
 
+            // Hide the wall bar — only its collider (the programmatic boundary)
+            // is needed; BoundaryFitter keeps it at the screen edge.
+            var sr = go.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                sr.enabled = false;
+            }
+
             var box = go.GetComponent<BoxCollider2D>();
             if (box != null)
             {
