@@ -16,6 +16,10 @@ public class BrickCluster : MonoBehaviour
     [Tooltip("Downward drift speed. 0 = horizontal only. When > 0 the cluster also bounces vertically inside the paddles so it never hits them.")]
     public float fallSpeed = 0f;
 
+    [Tooltip("Fraction of the paddle-to-paddle gap the vertical bounce uses, centred on the arena. 1 = full range (small cubes), 0.5 = half the up/down travel (formations).")]
+    [Range(0f, 1f)]
+    public float verticalRangeFraction = 1f;
+
     [Tooltip("Gap kept between the vertical bounce bounds and the paddles.")]
     public float paddleClearance = 0.5f;
 
@@ -46,6 +50,9 @@ public class BrickCluster : MonoBehaviour
         _bottomBound = -camHalfH;
         if (fallSpeed > 0f)
         {
+            // Start drifting up or down at random instead of always downward.
+            _vDir = Random.value < 0.5f ? 1 : -1;
+
             var paddleTop = GameObject.Find("PaddleTop");
             var paddleBottom = GameObject.Find("Paddle");
             if (paddleTop != null)
@@ -56,6 +63,13 @@ public class BrickCluster : MonoBehaviour
             {
                 _bottomBound = paddleBottom.transform.position.y + paddleBottom.transform.localScale.y + paddleClearance;
             }
+
+            // Shrink the bounce band symmetrically around its centre so formations
+            // can travel a smaller vertical distance than the small cubes.
+            float center = (_topBound + _bottomBound) * 0.5f;
+            float halfRange = (_topBound - _bottomBound) * 0.5f * verticalRangeFraction;
+            _topBound = center + halfRange;
+            _bottomBound = center - halfRange;
         }
     }
 

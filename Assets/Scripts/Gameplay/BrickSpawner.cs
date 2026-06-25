@@ -18,8 +18,11 @@ public class BrickSpawner : MonoBehaviour
     [Range(0f, 1f)]
     public float fallingCubeChance = 0.35f;
 
-    [Tooltip("Falling cubes drift down at this fraction of their horizontal speed.")]
+    [Tooltip("Steepest fall: an object's downward drift as a fraction of its horizontal speed.")]
     public float fallSpeedRatio = 0.25f;
+
+    [Tooltip("Shallowest fall. Each object picks a random fall angle between this and fallSpeedRatio so they don't all descend at the same angle.")]
+    public float fallSpeedRatioMin = 0.05f;
 
     private Sprite _whiteSquare;
     // Microbe textures, loaded from Resources/Microbes/{Round,RodH,RodV,Ball}.
@@ -30,6 +33,8 @@ public class BrickSpawner : MonoBehaviour
     private Texture2D[] _rodV;
     private Texture2D[] _ball;
     private float _nextSpawnTime;
+    private float _initialSpawnTime;
+    private bool _initialDone;
 
     // How a group of cells is skinned.
     private enum SkinMode
@@ -94,14 +99,37 @@ public class BrickSpawner : MonoBehaviour
         CreateSprite();
         LoadMicrobes();
         _nextSpawnTime = Time.time + firstSpawnDelay;
+        // Slight delay so BoundaryFitter has fitted the walls to the screen
+        // before we place the starting elements relative to them.
+        _initialSpawnTime = Time.time + 0.2f;
     }
 
     void Update()
     {
+        if (!_initialDone && Time.time >= _initialSpawnTime)
+        {
+            _initialDone = true;
+            SpawnInitial();
+        }
+
         if (Time.time >= _nextSpawnTime)
         {
             Spawn();
             ScheduleNext();
+        }
+    }
+
+    // Populate the arena at the start so it isn't empty: a couple of big
+    // formations and a couple of small drifting cubes, spread across the field.
+    void SpawnInitial()
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            SpawnCluster(Formations[Random.Range(0, Formations.Length)](), false, true);
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            SpawnCluster(new[] { Mk(SkinMode.Round, V(0, 0)) }, true, true);
         }
     }
 
@@ -139,7 +167,7 @@ public class BrickSpawner : MonoBehaviour
         }
     }
 
-    void SpawnCluster(Part[] parts, bool falling)
+    void SpawnCluster(Part[] parts, bool falling, bool spread = false)
     {
         bool goingRight = Random.value > 0.5f;
 
@@ -176,23 +204,49 @@ public class BrickSpawner : MonoBehaviour
             rightInner = camHalfW - shapeHalfWidth;
         }
 
-        float startX = goingRight ? leftInner : rightInner;
+        // Normal spawns enter at a side wall; starting elements are spread across
+        // the field so the arena begins populated rather than empty at the edges.
+        float entryX = goingRight ? leftInner : rightInner;
         float yMax = Mathf.Max(0f, yRangeHalf - shapeHalfHeight);
-        float y = Random.Range(-yMax, yMax);
+
+        // Don't spawn on top of another microbe: try a few positions and skip
+        // this spawn entirely if every attempt is occupied.
+        Vector2 boxSize = new Vector2(shapeHalfWidth * 2f, shapeHalfHeight * 2f) * visualScale;
+        float x = entryX;
+        float y = 0f;
+        bool placed = false;
+        for (int attempt = 0; attempt < 8; attempt++)
+        {
+            float candidateX = spread ? Random.Range(leftInner, rightInner) : entryX;
+            float candidateY = Random.Range(-yMax, yMax);
+            if (!OverlapsExistingBrick(new Vector2(candidateX, candidateY), boxSize))
+            {
+                x = candidateX;
+                y = candidateY;
+                placed = true;
+                break;
+            }
+        }
+        if (!placed)
+        {
+            return;
+        }
 
         GameObject clusterGO = new GameObject("BrickCluster");
-        clusterGO.transform.position = new Vector3(startX, y, 0f);
+        clusterGO.transform.position = new Vector3(x, y, 0f);
 
-        // Falling cubes get a random speed between half and full, so they drift
-        // at varying rates; normal formations keep the base speed.
-        float speedMul = falling ? Random.Range(0.5f, 1f) : 1f;
+        // Every virus gets a random speed from a quarter of the base up to full,
+        // rounded to a tidy 0.1 so it doesn't sit on an awkward fraction.
+        float speed = brickSpeed * Random.Range(0.25f, 1f);
+        speed = Mathf.Round(speed * 10f) / 10f;
         var cluster = clusterGO.AddComponent<BrickCluster>();
-        cluster.speed = brickSpeed * speedMul;
+        cluster.speed = speed;
         cluster.direction = goingRight ? Vector2.right : Vector2.left;
-        if (falling)
-        {
-            cluster.fallSpeed = cluster.speed * fallSpeedRatio;
-        }
+        // Everything drifts up and down, each at a random fall angle (no steeper
+        // than fallSpeedRatio). Small cubes use the full vertical range, the
+        // larger formations only half of it.
+        cluster.fallSpeed = cluster.speed * Random.Range(fallSpeedRatioMin, fallSpeedRatio);
+        cluster.verticalRangeFraction = falling ? 1f : 0.5f;
 
         // The whole structure shares a single health roll so it spawns a uniform
         // colour; individual pieces then redden as they are hit.
@@ -320,5 +374,20 @@ public class BrickSpawner : MonoBehaviour
             return null;
         }
         return set[Random.Range(0, set.Length)];
+    }
+
+    // True if any existing brick overlaps the given box. Walls and other
+    // colliders are ignored so only microbe-on-microbe overlap blocks a spawn.
+    bool OverlapsExistingBrick(Vector2 center, Vector2 size)
+    {
+        Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, 0f);
+        foreach (Collider2D hit in hits)
+        {
+            if (hit.GetComponentInParent<Brick>() != null)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
