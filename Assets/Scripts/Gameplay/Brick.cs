@@ -15,13 +15,7 @@ public class Brick : MonoBehaviour
 
     public float speed = 2f;
     public Vector2 direction = Vector2.right;
-    public float powerUpDropChance = 0.5f;
-
-    [Tooltip("When a drop happens, the chance it's a fast drop-shaped bullet that flies through the paddle instead of a catchable power-up.")]
-    public float bulletChance = 0.33f;
-
-    [Tooltip("Bullet flight speed — roughly the ball's top speed.")]
-    public float bulletSpeed = 30f;
+    public float bonusDropChance = 0.5f;
 
     [Tooltip("False when the brick is part of a BrickCluster — the cluster moves and bounces the whole formation instead.")]
     public bool selfMove = true;
@@ -30,9 +24,6 @@ public class Brick : MonoBehaviour
     private SpriteRenderer _sr;
     private float _leftBound;
     private float _rightBound;
-
-    private static Sprite _powerUpSprite;
-    private static Material _bulletTrailMat;
 
     void Awake()
     {
@@ -107,7 +98,7 @@ public class Brick : MonoBehaviour
         health--;
         if (health <= 0)
         {
-            TrySpawnPowerUp();
+            TrySpawnBonus();
             Destroy(gameObject);
         }
         else
@@ -116,102 +107,15 @@ public class Brick : MonoBehaviour
         }
     }
 
-    void TrySpawnPowerUp()
+    void TrySpawnBonus()
     {
-        if (Random.value > powerUpDropChance)
+        if (Random.value > bonusDropChance)
         {
             return;
         }
 
-        if (_powerUpSprite == null)
-        {
-            Texture2D tex = new Texture2D(1, 1);
-            tex.SetPixel(0, 0, Color.white);
-            tex.Apply();
-            _powerUpSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-        }
-
-        if (Random.value < bulletChance)
-        {
-            SpawnBullet();
-            return;
-        }
-
-        PowerUpType type = Random.value > 0.5f ? PowerUpType.RepairPaddle : PowerUpType.SpeedBoost;
-
-        GameObject go = new GameObject("PowerUp");
-        go.transform.position = transform.position;
-        // Sized a bit above a small-virus footprint; the icons read smaller than
-        // a solid microbe because they're detailed/sparse.
-        go.transform.localScale = new Vector3(0.75f, 0.75f, 1f);
-
-        var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = _powerUpSprite;
-        sr.color = type == PowerUpType.SpeedBoost ? new Color(0.3f, 1f, 0.4f) : new Color(1f, 0.4f, 0.9f);
-        sr.sortingOrder = 5;
-
-        var rb = go.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.freezeRotation = true;
-
-        var col = go.AddComponent<BoxCollider2D>();
-        col.size = Vector2.one;
-        col.isTrigger = true;
-
-        var powerUp = go.AddComponent<PowerUp>();
-        powerUp.type = type;
-    }
-
-    void SpawnBullet()
-    {
-        GameObject go = new GameObject("Bullet");
-        go.transform.position = transform.position;
-        go.transform.localScale = new Vector3(0.6f, 0.6f, 1f);
-
-        var sr = go.AddComponent<SpriteRenderer>();
-        Texture2D tex = Resources.Load<Texture2D>("Powerups/bullet");
-        if (tex != null)
-        {
-            float pixelsPerUnit = Mathf.Max(tex.width, tex.height);
-            sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), pixelsPerUnit);
-        }
-        else
-        {
-            sr.sprite = _powerUpSprite;
-        }
-        sr.sortingOrder = 6;
-
-        var rb = go.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.freezeRotation = true;
-        // The bullet is fast; sweep so it can't skip over the paddle in one step.
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-
-        var col = go.AddComponent<BoxCollider2D>();
-        col.size = Vector2.one;
-        col.isTrigger = true;
-
-        // Trailing streak behind the bullet.
-        if (_bulletTrailMat == null)
-        {
-            _bulletTrailMat = new Material(Shader.Find("Sprites/Default"));
-        }
-        var trail = go.AddComponent<TrailRenderer>();
-        trail.time = 0.18f;
-        trail.startWidth = 0.35f;
-        trail.endWidth = 0f;
-        trail.minVertexDistance = 0.05f;
-        trail.numCapVertices = 2;
-        trail.material = _bulletTrailMat;
-        trail.startColor = new Color(1f, 0.85f, 0.2f, 0.7f);
-        trail.endColor = new Color(1f, 0.85f, 0.2f, 0f);
-        trail.sortingOrder = 5;
-
-        var bullet = go.AddComponent<Bullet>();
-        bullet.direction = Random.value > 0.5f ? Vector2.up : Vector2.down;
-        bullet.speed = bulletSpeed;
+        // Pick a bonus from the catalog and let the Bonus processor build and run it.
+        Bonus.Spawn(BonusCatalog.Random(), transform.position);
     }
 
     void UpdateColor()

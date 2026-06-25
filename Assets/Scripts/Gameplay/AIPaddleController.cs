@@ -105,27 +105,28 @@ public class AIPaddleController : MonoBehaviour
             return _ball.position.x;
         }
 
-        PowerUp target = FindIncomingPowerUp(toMe);
+        Bonus target = FindIncomingBonus(toMe);
         return target != null ? target.transform.position.x : _ball.position.x;
     }
 
-    PowerUp FindIncomingPowerUp(float toMe)
+    Bonus FindIncomingBonus(float toMe)
     {
-        PowerUp[] powerUps = FindObjectsByType<PowerUp>(FindObjectsSortMode.None);
-        PowerUp best = null;
+        Bonus[] bonuses = FindObjectsByType<Bonus>(FindObjectsSortMode.None);
+        Bonus best = null;
         float bestDist = float.MaxValue;
-        foreach (PowerUp pu in powerUps)
+        foreach (Bonus bonus in bonuses)
         {
-            // Only ones drifting toward this paddle can actually be caught.
-            if (pu.Direction.y * toMe <= 0f)
+            // Only catchable bonuses drifting toward this paddle are worth chasing —
+            // ignore the piercing bullet (it can't be caught and only hurts).
+            if (!bonus.Catchable || bonus.Direction.y * toMe <= 0f)
             {
                 continue;
             }
-            float dist = Mathf.Abs(pu.transform.position.x - transform.position.x);
+            float dist = Mathf.Abs(bonus.transform.position.x - transform.position.x);
             if (dist < bestDist)
             {
                 bestDist = dist;
-                best = pu;
+                best = bonus;
             }
         }
         return best;
