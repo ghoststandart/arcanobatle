@@ -16,8 +16,6 @@ public class AIPaddleController : MonoBehaviour
 
     private Camera _cam;
     private PaddleHealth _health;
-    private Transform _ball;
-    private Rigidbody2D _ballRb;
     private float _paddleHalfWidth;
     private float _minX;
     private float _maxX;
@@ -39,13 +37,6 @@ public class AIPaddleController : MonoBehaviour
         _minX = -camHalfWidth + allowed;
         _maxX = camHalfWidth - allowed;
 
-        var ballGO = GameObject.Find("Ball");
-        if (ballGO != null)
-        {
-            _ball = ballGO.transform;
-            _ballRb = ballGO.GetComponent<Rigidbody2D>();
-        }
-
         _targetX = transform.position.x;
         _bufferedTargetX = _targetX;
         PickNewDelay();
@@ -53,7 +44,8 @@ public class AIPaddleController : MonoBehaviour
 
     void Update()
     {
-        if (_ball == null)
+        BallController ball = PickBall();
+        if (ball == null)
         {
             return;
         }
@@ -63,7 +55,7 @@ public class AIPaddleController : MonoBehaviour
             PickNewDelay();
         }
 
-        float coverX = ChooseTargetX();
+        float coverX = ChooseTargetX(ball);
         // Aim the center of the longest intact piece at the ball — not an edge.
         _bufferedTargetX = _health != null
             ? _health.SegmentAlignedCenter(coverX)
@@ -93,20 +85,44 @@ public class AIPaddleController : MonoBehaviour
     // drifting toward this side. While the ball is on the opponent's half there
     // is time to leave the goal and grab one. Falls back to the ball's x when
     // there's nothing to grab.
-    float ChooseTargetX()
+    // Picks the most threatening current ball: one heading toward this paddle and
+    // furthest into its half. Re-evaluated every frame, so a destroyed ball (e.g. a
+    // split clone leaving the field) never strands the AI, and it tracks multiball.
+    BallController PickBall()
     {
         float toMe = Mathf.Sign(transform.position.y);
-        bool ballComingToMe = _ballRb != null && _ballRb.linearVelocity.y * toMe > 0f;
-        bool ballOnMySide = _ball.position.y * toMe > 0f;
+        BallController[] balls = FindObjectsByType<BallController>(FindObjectsSortMode.None);
+        BallController best = null;
+        float bestScore = float.NegativeInfinity;
+        foreach (BallController ball in balls)
+        {
+            var rb = ball.GetComponent<Rigidbody2D>();
+            bool coming = rb != null && rb.linearVelocity.y * toMe > 0f;
+            float score = (coming ? 1000f : 0f) + ball.transform.position.y * toMe;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = ball;
+            }
+        }
+        return best;
+    }
+
+    float ChooseTargetX(BallController ball)
+    {
+        float toMe = Mathf.Sign(transform.position.y);
+        var rb = ball.GetComponent<Rigidbody2D>();
+        bool ballComingToMe = rb != null && rb.linearVelocity.y * toMe > 0f;
+        bool ballOnMySide = ball.transform.position.y * toMe > 0f;
         bool mustDefend = ballComingToMe && ballOnMySide;
 
         if (mustDefend || !chasePowerUps)
         {
-            return _ball.position.x;
+            return ball.transform.position.x;
         }
 
         Bonus target = FindIncomingBonus(toMe);
-        return target != null ? target.transform.position.x : _ball.position.x;
+        return target != null ? target.transform.position.x : ball.transform.position.x;
     }
 
     Bonus FindIncomingBonus(float toMe)

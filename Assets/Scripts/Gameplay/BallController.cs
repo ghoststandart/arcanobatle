@@ -24,6 +24,11 @@ public class BallController : MonoBehaviour
 
     private float _radius;
 
+    [Tooltip("Balls created by the split bonus — they keep their split velocity instead of launching fresh.")]
+    public bool isClone;
+
+    private bool _leaving;
+
     void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -39,7 +44,10 @@ public class BallController : MonoBehaviour
         _topBound = camSize + 1f;
         _bottomBound = -camSize - 1f;
         _currentSpeed = startSpeed;
-        Launch();
+        if (!isClone)
+        {
+            Launch();
+        }
     }
 
     void Update()
@@ -50,7 +58,8 @@ public class BallController : MonoBehaviour
             {
                 ScoreManager.Instance.AddBottomScore();
             }
-            Respawn();
+            LeaveField();
+            return;
         }
         else if (transform.position.y < _bottomBound)
         {
@@ -58,7 +67,8 @@ public class BallController : MonoBehaviour
             {
                 ScoreManager.Instance.AddTopScore();
             }
-            Respawn();
+            LeaveField();
+            return;
         }
 
         if (_currentSpeed < maxSpeed)
@@ -197,6 +207,54 @@ public class BallController : MonoBehaviour
             _sr.color = Color.white;
         }
         Launch();
+    }
+
+    // When other balls are still in play, an exiting ball just despawns; only the
+    // last one respawns, so the field always settles back to exactly one ball. The
+    // _leaving flag makes simultaneous exits resolve to a single survivor.
+    void LeaveField()
+    {
+        _leaving = true;
+        BallController[] balls = FindObjectsByType<BallController>(FindObjectsSortMode.None);
+        foreach (BallController ball in balls)
+        {
+            if (!ball._leaving)
+            {
+                Destroy(gameObject);
+                return;
+            }
+        }
+        _leaving = false;
+        Respawn();
+    }
+
+    // Creates a second ball that diverges from this one (and angles this one the
+    // other way), for the split bonus. The clone despawns when it leaves the field.
+    public void SpawnSplit()
+    {
+        Vector2 v = _rb.linearVelocity;
+        if (v.sqrMagnitude < 0.01f)
+        {
+            v = _lastDir * Mathf.Max(_currentSpeed + _speedBonus, startSpeed);
+        }
+
+        const float spreadDeg = 30f;
+        GameObject clone = Instantiate(gameObject, transform.position, transform.rotation);
+        clone.name = "Ball";
+        var ctrl = clone.GetComponent<BallController>();
+        ctrl.isClone = true;
+        var cloneRb = clone.GetComponent<Rigidbody2D>();
+        cloneRb.linearVelocity = Rotate(v, spreadDeg * Mathf.Deg2Rad);
+
+        _rb.linearVelocity = Rotate(v, -spreadDeg * Mathf.Deg2Rad);
+        _lastDir = _rb.linearVelocity.normalized;
+    }
+
+    static Vector2 Rotate(Vector2 v, float radians)
+    {
+        float c = Mathf.Cos(radians);
+        float s = Mathf.Sin(radians);
+        return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
     }
 
     public void ApplySpeedBoost(float amount, float duration)

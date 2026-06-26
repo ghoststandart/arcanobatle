@@ -19,6 +19,8 @@ public static class BonusDropper
     {
         () => new SpeedBoostBonus(),
         () => new RepairBonus(),
+        () => new SplitBallBonus(),
+        () => new ExtraCubesBonus(),
     };
 
     // Indices within each group that are owed a guaranteed drop next roll.

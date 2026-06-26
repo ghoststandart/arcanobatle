@@ -140,6 +140,53 @@ public class PaddleHealth : MonoBehaviour
     }
 
     /// <summary>
+    /// Adds extra plain cubes at random spots around the paddle (they move with it,
+    /// bounce the ball and take damage like normal segments). For the extra-cubes bonus.
+    /// </summary>
+    public void AddRandomSegments(int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            float x = Random.Range(-0.45f, 0.45f);
+            float y = Random.Range(-1.6f, 1.6f);
+
+            GameObject seg = new GameObject("PaddleSegment");
+            seg.transform.SetParent(transform, false);
+            seg.transform.localPosition = new Vector3(x, y, 0f);
+            seg.transform.localScale = new Vector3(1f / columns, 1f, 1f);
+
+            var col = seg.AddComponent<BoxCollider2D>();
+            col.size = Vector2.one;
+
+            GameObject skin = new GameObject("Skin");
+            skin.transform.SetParent(seg.transform, false);
+            var sr = skin.AddComponent<SpriteRenderer>();
+            if (_texture != null)
+            {
+                // Cut the cube from the paddle's own texture (a full-height column
+                // slice at this x) so the extra cubes match the board.
+                float u0 = x - 0.5f / columns + 0.5f;
+                float u1 = x + 0.5f / columns + 0.5f;
+                int x0 = Mathf.RoundToInt(u0 * _texture.width);
+                int x1 = Mathf.RoundToInt(u1 * _texture.width);
+                int w = Mathf.Max(1, x1 - x0);
+                int h = _texture.height;
+                sr.sprite = Sprite.Create(_texture, new Rect(x0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+                skin.transform.localScale = new Vector3(100f / w, 100f / h, 1f);
+            }
+            else
+            {
+                sr.sprite = _fallback;
+            }
+
+            var segment = seg.AddComponent<PaddleSegment>();
+            segment.owner = this;
+            segment.Init(segmentMaxHealth);
+            _segments.Add(segment);
+        }
+    }
+
+    /// <summary>
     /// Hands out the given number of lives one by one to random segments that
     /// are below max health. Destroyed segments come back to life as soon as
     /// they receive a point. Stops early when the whole paddle is at full health.
