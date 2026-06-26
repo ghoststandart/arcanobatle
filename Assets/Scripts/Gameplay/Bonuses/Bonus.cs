@@ -13,6 +13,7 @@ public class Bonus : MonoBehaviour
     private float _topBound;
     private float _bottomBound;
     private int _hits;
+    private float _lastHitY;
 
     /// <summary>Travel direction (up/down). Used by the AI to pick catchable drops.</summary>
     public Vector2 Direction { get { return _direction; } }
@@ -65,12 +66,33 @@ public class Bonus : MonoBehaviour
         float camSize = Camera.main.orthographicSize;
         _topBound = camSize + 2f;
         _bottomBound = -camSize - 2f;
-        _direction = Random.value > 0.5f ? Vector2.up : Vector2.down;
 
         if (_def != null)
         {
+            _direction = _def.PickDirection();
+            if (_def.HomesToPaddle)
+            {
+                // Aim the initial direction at the paddle's centre, once. It then
+                // flies straight along that line — it does not track the paddle.
+                string paddleName = _direction.y < 0f ? "Paddle" : "PaddleTop";
+                var paddle = GameObject.Find(paddleName);
+                if (paddle != null)
+                {
+                    Vector2 toCentre = (Vector2)(paddle.transform.position - transform.position);
+                    if (toCentre.sqrMagnitude > 0.0001f)
+                    {
+                        _direction = toCentre.normalized;
+                    }
+                }
+            }
             _def.SetupVisual(gameObject, _direction);
         }
+    }
+
+    /// <summary>An even up-or-down direction. Used by bonuses with no directional bias.</summary>
+    public static Vector2 RandomDirection()
+    {
+        return Random.value > 0.5f ? Vector2.up : Vector2.down;
     }
 
     void Update()
@@ -103,6 +125,15 @@ public class Bonus : MonoBehaviour
             {
                 return;
             }
+            // Pierce straight through the paddle's depth: ignore a second cube at
+            // nearly the same height (a side-by-side neighbour) and only damage a
+            // cube on a new row as the bullet passes through.
+            float segY = segment.transform.position.y;
+            if (_hits > 0 && Mathf.Abs(segY - _lastHitY) < 0.08f)
+            {
+                return;
+            }
+            _lastHitY = segY;
             _def.Apply(new BonusContext { bonus = this, segment = segment });
             _hits++;
         }

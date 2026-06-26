@@ -15,7 +15,6 @@ public class Brick : MonoBehaviour
 
     public float speed = 2f;
     public Vector2 direction = Vector2.right;
-    public float bonusDropChance = 0.5f;
 
     [Tooltip("False when the brick is part of a BrickCluster — the cluster moves and bounces the whole formation instead.")]
     public bool selfMove = true;
@@ -109,13 +108,14 @@ public class Brick : MonoBehaviour
 
     void TrySpawnBonus()
     {
-        if (Random.value > bonusDropChance)
+        // Each bonus rolls independently; up to one bullet and one power-up can
+        // drop together. Spread multiple drops a little so they don't stack.
+        System.Collections.Generic.List<IBonus> drops = BonusDropper.Roll();
+        for (int i = 0; i < drops.Count; i++)
         {
-            return;
+            float offsetX = (i - (drops.Count - 1) * 0.5f) * 0.2f;
+            Bonus.Spawn(drops[i], transform.position + Vector3.right * offsetX);
         }
-
-        // Pick a bonus from the catalog and let the Bonus processor build and run it.
-        Bonus.Spawn(BonusCatalog.Random(), transform.position);
     }
 
     void UpdateColor()
