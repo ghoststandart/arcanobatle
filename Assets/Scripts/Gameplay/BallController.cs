@@ -19,10 +19,17 @@ public class BallController : MonoBehaviour
     [Tooltip("Minimum angle (degrees) the ball's path keeps from horizontal, so it never flies flat between the side walls and stalls the rally.")]
     public float minAngleFromHorizontal = 10f;
 
+    [Tooltip("How far inside the screen edge the ball's edge is kept — a hard clamp against a fast ball briefly overshooting the side walls.")]
+    public float sideEdgeMargin = 0.05f;
+
+    private float _radius;
+
     void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
         _sr = GetComponent<SpriteRenderer>();
+        var circle = GetComponent<CircleCollider2D>();
+        _radius = circle != null ? circle.radius * Mathf.Abs(transform.lossyScale.x) : 0.135f;
         if (_sr != null)
         {
             _sr.color = Color.white;
@@ -76,6 +83,55 @@ public class BallController : MonoBehaviour
 
         float effectiveSpeed = _currentSpeed + _speedBonus;
         _rb.linearVelocity = MaintainVelocity(_rb.linearVelocity, effectiveSpeed);
+        ClampToSideWalls();
+    }
+
+    // Safety net: a fast ball can briefly overshoot the side walls before the
+    // physics resolves the bounce. Hard-clamp it so its edge never crosses the
+    // screen, flipping any still-outward velocity so it heads back in. This lets
+    // the walls sit at the very edge (maximally wide) without the ball escaping.
+    void ClampToSideWalls()
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+        {
+            return;
+        }
+
+        float halfW = cam.orthographicSize * cam.aspect;
+        float maxX = halfW - _radius - sideEdgeMargin;
+        if (maxX <= 0f)
+        {
+            return;
+        }
+
+        Vector3 p = transform.position;
+        Vector2 v = _rb.linearVelocity;
+        bool clamped = false;
+        if (p.x > maxX)
+        {
+            p.x = maxX;
+            if (v.x > 0f)
+            {
+                v.x = -v.x;
+            }
+            clamped = true;
+        }
+        else if (p.x < -maxX)
+        {
+            p.x = -maxX;
+            if (v.x < 0f)
+            {
+                v.x = -v.x;
+            }
+            clamped = true;
+        }
+
+        if (clamped)
+        {
+            transform.position = p;
+            _rb.linearVelocity = v;
+        }
     }
 
     // The ball is supposed to travel at a constant speed; a glancing or two-surface

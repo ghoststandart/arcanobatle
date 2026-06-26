@@ -16,7 +16,7 @@ public class BrickSpawner : MonoBehaviour
 
     [Tooltip("Chance a spawn is a single cube that slowly drifts downward (bouncing inside the paddles) instead of a normal side-moving formation.")]
     [Range(0f, 1f)]
-    public float fallingCubeChance = 0.35f;
+    public float fallingCubeChance = 0.5f;
 
     [Tooltip("Steepest fall: an object's downward drift as a fraction of its horizontal speed.")]
     public float fallSpeedRatio = 0.25f;

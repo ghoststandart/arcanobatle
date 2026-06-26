@@ -46,6 +46,13 @@ public class PaddleSegment : MonoBehaviour
             return;
         }
 
+        // Only one cube is broken per bounce: if the ball straddles two segments,
+        // the first one claims the hit and the rest are ignored for a short window.
+        if (owner != null && !owner.TryClaimBallHit())
+        {
+            return;
+        }
+
         Damage(1);
         RedirectBall(col.rigidbody);
     }

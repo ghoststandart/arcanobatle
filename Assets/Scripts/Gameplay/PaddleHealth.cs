@@ -14,12 +14,60 @@ public class PaddleHealth : MonoBehaviour
     public int columns = 10;
     public int segmentMaxHealth = 2;
 
-    [Tooltip("Max deflection from vertical (degrees) when the ball hits the very edge of the paddle. Center hits bounce straight.")]
-    public float maxBounceAngle = 60f;
+    [Tooltip("Max deflection from vertical (degrees) at the paddle edge. Higher = flatter (more horizontal) edge bounces. Center hits bounce straight up.")]
+    public float maxBounceAngle = 80f;
+
+    [Tooltip("After the ball damages one segment, ignore further segment damage from it for this long, so a single bounce can only break one cube.")]
+    public float ballHitCooldown = 0.15f;
 
     private readonly List<PaddleSegment> _segments = new List<PaddleSegment>();
     private Texture2D _texture;
     private Sprite _fallback;
+    private float _lastBallHitTime = -999f;
+
+    /// <summary>
+    /// Returns true for the first segment touched in a given ball-paddle contact and
+    /// blocks the rest for a short window, so one bounce only ever breaks one cube.
+    /// </summary>
+    public bool TryClaimBallHit()
+    {
+        if (Time.time - _lastBallHitTime < ballHitCooldown)
+        {
+            return false;
+        }
+        _lastBallHitTime = Time.time;
+        return true;
+    }
+
+    /// <summary>Full health summed over all segments (each segment's max).</summary>
+    public int MaxHealth
+    {
+        get
+        {
+            int max = 0;
+            foreach (PaddleSegment segment in _segments)
+            {
+                max += segment.maxHealth;
+            }
+            return max;
+        }
+    }
+
+    /// <summary>Current health summed over all segments as a 0..1 fraction of full.</summary>
+    public float HealthFraction
+    {
+        get
+        {
+            int current = 0;
+            int max = 0;
+            foreach (PaddleSegment segment in _segments)
+            {
+                current += segment.health;
+                max += segment.maxHealth;
+            }
+            return max > 0 ? (float)current / max : 0f;
+        }
+    }
 
     // Builds the paddle and skins it with the paddle texture, sliced across the
     // segments the same way microbe bricks are sliced across a cluster. Each
