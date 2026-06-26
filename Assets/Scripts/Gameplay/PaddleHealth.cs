@@ -39,7 +39,7 @@ public class PaddleHealth : MonoBehaviour
         return true;
     }
 
-    /// <summary>Full health summed over all segments (each segment's max).</summary>
+    /// <summary>Full health of the base paddle (excludes bonus growth cubes).</summary>
     public int MaxHealth
     {
         get
@@ -47,13 +47,16 @@ public class PaddleHealth : MonoBehaviour
             int max = 0;
             foreach (PaddleSegment segment in _segments)
             {
-                max += segment.maxHealth;
+                if (!segment.isExtra)
+                {
+                    max += segment.maxHealth;
+                }
             }
             return max;
         }
     }
 
-    /// <summary>Current health summed over all segments as a 0..1 fraction of full.</summary>
+    /// <summary>Base paddle health as a 0..1 fraction of full (excludes growth cubes).</summary>
     public float HealthFraction
     {
         get
@@ -62,6 +65,10 @@ public class PaddleHealth : MonoBehaviour
             int max = 0;
             foreach (PaddleSegment segment in _segments)
             {
+                if (segment.isExtra)
+                {
+                    continue;
+                }
                 current += segment.health;
                 max += segment.maxHealth;
             }
@@ -181,6 +188,7 @@ public class PaddleHealth : MonoBehaviour
 
             var segment = seg.AddComponent<PaddleSegment>();
             segment.owner = this;
+            segment.isExtra = true;
             segment.Init(segmentMaxHealth);
             _segments.Add(segment);
         }
@@ -199,7 +207,7 @@ public class PaddleHealth : MonoBehaviour
             damaged.Clear();
             foreach (PaddleSegment segment in _segments)
             {
-                if (segment.health < segment.maxHealth)
+                if (!segment.isExtra && segment.health < segment.maxHealth)
                 {
                     damaged.Add(segment);
                 }

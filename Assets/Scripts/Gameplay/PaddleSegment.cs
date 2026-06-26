@@ -11,6 +11,9 @@ public class PaddleSegment : MonoBehaviour
     public int health = 2;
     public PaddleHealth owner;
 
+    [Tooltip("True for bonus 'growth' cubes added around the paddle — they are not counted as base health and are not healed by the repair bonus.")]
+    public bool isExtra;
+
     private SpriteRenderer _sr;
     private BoxCollider2D _col;
 

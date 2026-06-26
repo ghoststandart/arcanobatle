@@ -5,7 +5,7 @@ public class ExtraCubesBonus : IBonus
 {
     private const int Cubes = 3;
 
-    public float DropChance { get { return 0.1f; } }
+    public float DropChance { get { return 0.07f; } }
     public float Speed { get { return 2f; } }
     public bool PiercesPaddle { get { return false; } }
     public int MaxPaddleHits { get { return 0; } }

@@ -23,6 +23,7 @@ public class Brick : MonoBehaviour
     private SpriteRenderer _sr;
     private float _leftBound;
     private float _rightBound;
+    private bool _dead;
 
     void Awake()
     {
@@ -89,7 +90,9 @@ public class Brick : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D col)
     {
-        if (col.gameObject.name != "Ball")
+        // _dead guards against two balls killing the same brick in one frame,
+        // which would otherwise roll the bonus drop twice.
+        if (_dead || col.gameObject.name != "Ball")
         {
             return;
         }
@@ -97,6 +100,7 @@ public class Brick : MonoBehaviour
         health--;
         if (health <= 0)
         {
+            _dead = true;
             TrySpawnBonus();
             Destroy(gameObject);
         }

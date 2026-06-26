@@ -6,7 +6,7 @@ public class SpeedBoostBonus : IBonus
     private const float Amount = 5f;
     private const float Duration = 5f;
 
-    public float DropChance { get { return 0.12f; } }
+    public float DropChance { get { return 0.1f; } }
     public float Speed { get { return 2f; } }
     public bool PiercesPaddle { get { return false; } }
     public int MaxPaddleHits { get { return 0; } }

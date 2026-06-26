@@ -10,7 +10,7 @@ public class RepairBonus : IBonus
     // (at zero), so even at its strongest it's a ratio, never a certainty.
     private const float PullStrength = 5f;
 
-    public float DropChance { get { return 0.12f; } }
+    public float DropChance { get { return 0.08f; } }
     public float Speed { get { return 2f; } }
     public bool PiercesPaddle { get { return false; } }
     public int MaxPaddleHits { get { return 0; } }
