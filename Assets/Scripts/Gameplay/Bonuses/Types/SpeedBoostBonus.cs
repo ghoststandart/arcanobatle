@@ -24,15 +24,12 @@ public class SpeedBoostBonus : IBonus
 
     public void Apply(BonusContext ctx)
     {
-        var ball = GameObject.Find("Ball");
-        if (ball == null)
+        // Speed up one random ball in play.
+        var balls = Object.FindObjectsByType<BallController>(FindObjectsSortMode.None);
+        if (balls.Length == 0)
         {
             return;
         }
-        var ballCtrl = ball.GetComponent<BallController>();
-        if (ballCtrl != null)
-        {
-            ballCtrl.ApplySpeedBoost(Amount, Duration);
-        }
+        balls[Random.Range(0, balls.Length)].ApplySpeedBoost(Amount, Duration);
     }
 }

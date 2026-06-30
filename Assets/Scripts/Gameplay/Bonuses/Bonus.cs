@@ -14,6 +14,7 @@ public class Bonus : MonoBehaviour
     private float _bottomBound;
     private int _hits;
     private float _lastHitY;
+    private bool _consumed;
 
     /// <summary>Travel direction (up/down). Used by the AI to pick catchable drops.</summary>
     public Vector2 Direction { get { return _direction; } }
@@ -139,11 +140,18 @@ public class Bonus : MonoBehaviour
         }
         else
         {
+            // _consumed guards against the bonus overlapping several paddle segments
+            // in one frame, which would otherwise apply the effect more than once.
+            if (_consumed)
+            {
+                return;
+            }
             var paddle = other.GetComponentInParent<PaddleHealth>();
             if (paddle == null)
             {
                 return;
             }
+            _consumed = true;
             _def.Apply(new BonusContext { bonus = this, paddle = paddle });
             Destroy(gameObject);
         }

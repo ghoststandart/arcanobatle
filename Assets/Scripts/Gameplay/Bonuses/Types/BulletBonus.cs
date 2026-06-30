@@ -11,7 +11,9 @@ public class BulletBonus : IBonus
 
     protected virtual float FlySpeed { get { return 30f; } }
     protected virtual int Damage { get { return 2; } }
-    protected virtual int Hits { get { return 2; } }
+    // High cap: the bullet pierces one cube per row, through however many rows the
+    // paddle has (the per-row filter in the processor stops it hitting a row twice).
+    protected virtual int Hits { get { return 8; } }
     protected virtual Color Tint { get { return Color.white; } }
     protected virtual Color TrailColor { get { return new Color(1f, 0.85f, 0.2f, 0.7f); } }
     protected virtual float DownChance { get { return 0.5f; } }   // 0.5 = even up/down

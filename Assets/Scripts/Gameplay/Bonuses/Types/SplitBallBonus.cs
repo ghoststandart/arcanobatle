@@ -31,10 +31,8 @@ public class SplitBallBonus : IBonus
         {
             return;
         }
-        foreach (BallController ball in balls)
-        {
-            ball.SpawnSplit();
-        }
+        // Split one random ball into two.
+        balls[Random.Range(0, balls.Length)].SpawnSplit();
     }
 
     static int BallCount()
