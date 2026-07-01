@@ -496,7 +496,8 @@ public class MenuController : MonoBehaviour
         if (rt == _startButton)
         {
             _loading = true;
-            SceneManager.LoadScene(gameSceneName);
+            // A persistent loading overlay handles the async load + reveal.
+            LoadingOverlay.Begin(gameSceneName);
         }
         else if (rt == _rulesButton)
         {

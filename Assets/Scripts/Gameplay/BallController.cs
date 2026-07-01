@@ -28,6 +28,7 @@ public class BallController : MonoBehaviour
     public bool isClone;
 
     private bool _leaving;
+    private bool _launched;
 
     void Start()
     {
@@ -44,14 +45,32 @@ public class BallController : MonoBehaviour
         _topBound = camSize + 1f;
         _bottomBound = -camSize - 1f;
         _currentSpeed = startSpeed;
-        if (!isClone)
+        if (!isClone && GameBoot.Ready)
         {
             Launch();
+            _launched = true;
         }
     }
 
     void Update()
     {
+        // Held behind the loading screen: keep the ball parked and inert until the
+        // scene is revealed, then launch it.
+        if (!GameBoot.Ready)
+        {
+            if (!isClone)
+            {
+                _rb.linearVelocity = Vector2.zero;
+                transform.position = Vector3.zero;
+            }
+            return;
+        }
+        if (!isClone && !_launched)
+        {
+            Launch();
+            _launched = true;
+        }
+
         if (transform.position.y > _topBound)
         {
             if (ScoreManager.Instance != null)

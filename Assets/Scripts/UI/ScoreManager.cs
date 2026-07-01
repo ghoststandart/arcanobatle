@@ -101,6 +101,13 @@ public class ScoreManager : MonoBehaviour
 
     void OnGUI()
     {
+        // IMGUI draws on top of the loading overlay canvas, so hide the score
+        // until the game is revealed.
+        if (!GameBoot.Ready)
+        {
+            return;
+        }
+
         if (_style == null)
         {
             _style = new GUIStyle();
