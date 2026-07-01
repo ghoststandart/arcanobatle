@@ -42,7 +42,8 @@ public class ResultController : MonoBehaviour
         scaler.referenceResolution = new Vector2(1080f, 1920f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        var winner = NewText("Winner", canvasGO.transform, $"Player {GameResult.winner} Wins!", 84, TextAnchor.MiddleCenter);
+        string winnerName = GameResult.winner == 1 ? GameResult.playerName : GameResult.aiName;
+        var winner = NewText("Winner", canvasGO.transform, $"{winnerName} Wins!", 84, TextAnchor.MiddleCenter);
         Place(winner.rectTransform, new Vector2(0.5f, 0.66f), new Vector2(1000f, 160f));
 
         var score = NewText("Score", canvasGO.transform, $"{GameResult.bottomScore} : {GameResult.topScore}", 64, TextAnchor.MiddleCenter);

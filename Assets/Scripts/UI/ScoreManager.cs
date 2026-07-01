@@ -20,8 +20,12 @@ public class ScoreManager : MonoBehaviour
 
     public int fontSize = 54;
 
+    [Tooltip("Name shown for the AI opponent in the score line.")]
+    public string aiName = "Virus";
+
     private GUIStyle _style;
     private bool _gameEnded;
+    private string _playerName;
 
     void Awake()
     {
@@ -29,6 +33,22 @@ public class ScoreManager : MonoBehaviour
         topScore = 0;
         bottomScore = 0;
         _gameEnded = false;
+
+        // Player 1 (bottom paddle) is the human: use the name set in Settings.
+        string n = PlayerPrefs.GetString(MenuController.NameKey, "");
+        if (string.IsNullOrEmpty(n))
+        {
+            n = "Player 1";
+        }
+        if (n.Length > MenuController.MaxNameLength)
+        {
+            n = n.Substring(0, MenuController.MaxNameLength);
+        }
+        _playerName = n;
+
+        // Make the names available to the game-over screen too.
+        GameResult.playerName = _playerName;
+        GameResult.aiName = aiName;
     }
 
     public void AddTopScore()
@@ -90,8 +110,8 @@ public class ScoreManager : MonoBehaviour
         }
         _style.fontSize = fontSize;
 
-        string text = $"Player 1  {bottomScore}:{topScore}  Player 2";
-        float width = 800f;
+        string text = $"{_playerName}  {bottomScore}:{topScore}  {aiName}";
+        float width = 950f;
         float height = fontSize + 20f;
 
         float x;

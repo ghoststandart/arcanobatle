@@ -22,6 +22,9 @@ public class MenuController : MonoBehaviour
 
     // PlayerPrefs key for the player's saved name.
     public const string NameKey = "PlayerName";
+
+    // Kept short so two names of this length still fit on one score line.
+    public const int MaxNameLength = 8;
     private RectTransform _pressed;
     private RectTransform _animButton;
     private Vector3 _animTarget = Vector3.one;
@@ -272,7 +275,7 @@ public class MenuController : MonoBehaviour
 
         input.textComponent = text;
         input.placeholder = placeholder;
-        input.characterLimit = 16;
+        input.characterLimit = MaxNameLength;
         input.text = PlayerPrefs.GetString(NameKey, "");
         input.onValueChanged.AddListener(delegate(string v) { PlayerPrefs.SetString(NameKey, v); });
         input.onEndEdit.AddListener(delegate(string v)
