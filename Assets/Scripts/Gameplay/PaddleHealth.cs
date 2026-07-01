@@ -24,6 +24,36 @@ public class PaddleHealth : MonoBehaviour
     private Texture2D _texture;
     private Sprite _fallback;
     private float _lastBallHitTime = -999f;
+    private bool _lost;
+
+    /// <summary>
+    /// Called by a segment when it drops to zero health. If every cube on this
+    /// paddle is now gone, this paddle's player loses and the other one wins.
+    /// </summary>
+    public void NotifyCubeDestroyed()
+    {
+        if (_lost)
+        {
+            return;
+        }
+        foreach (PaddleSegment segment in _segments)
+        {
+            if (!segment.IsDestroyed)
+            {
+                return;
+            }
+        }
+        if (_segments.Count == 0)
+        {
+            return;
+        }
+        _lost = true;
+        int losingPlayer = gameObject.name == "PaddleTop" ? 2 : 1;
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.PaddleDestroyed(losingPlayer);
+        }
+    }
 
     /// <summary>
     /// Returns true for the first segment touched in a given ball-paddle contact and

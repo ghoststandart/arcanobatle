@@ -51,6 +51,22 @@ public class ScoreManager : MonoBehaviour
         CheckWin();
     }
 
+    /// <summary>
+    /// Ends the game because a paddle lost all of its cubes; the other player wins.
+    /// </summary>
+    public void PaddleDestroyed(int losingPlayer)
+    {
+        if (_gameEnded)
+        {
+            return;
+        }
+        _gameEnded = true;
+        GameResult.topScore = topScore;
+        GameResult.bottomScore = bottomScore;
+        GameResult.winner = losingPlayer == 1 ? 2 : 1;
+        SceneManager.LoadScene("GameOver");
+    }
+
     void CheckWin()
     {
         if (topScore >= winningScore || bottomScore >= winningScore)

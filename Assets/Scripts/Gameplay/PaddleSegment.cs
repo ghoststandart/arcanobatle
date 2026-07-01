@@ -93,6 +93,10 @@ public class PaddleSegment : MonoBehaviour
     {
         health = Mathf.Max(health - amount, 0);
         UpdateVisual();
+        if (health <= 0 && owner != null)
+        {
+            owner.NotifyCubeDestroyed();
+        }
     }
 
     public void Heal(int amount)
