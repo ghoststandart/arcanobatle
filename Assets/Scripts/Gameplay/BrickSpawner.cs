@@ -14,9 +14,24 @@ public class BrickSpawner : MonoBehaviour
     [Tooltip("How much bigger the microbe looks than its physical footprint. 1 = fills the cells exactly; 1.5 = bulges 50% past the colliders (like the ball). Collisions are unaffected.")]
     public float visualScale = 1.5f;
 
-    [Tooltip("Chance a spawn is a single cube that slowly drifts downward (bouncing inside the paddles) instead of a normal side-moving formation.")]
+    [Tooltip("Historic share of spawns that are a single drifting cube vs. a big formation. Now only used to derive each type's independent spawn rate so big formations keep their old frequency.")]
     [Range(0f, 1f)]
     public float fallingCubeChance = 0.5f;
+
+    [Tooltip("Small drifting cubes appear this many times as often as they used to, while big formations keep their old rate.")]
+    public float smallSpawnBoost = 1.5f;
+
+    [Tooltip("How many big formations to place across the field at game start so it begins populated instead of filling up gradually.")]
+    public int initialBigCount = 2;
+
+    [Tooltip("How many small drifting cubes to place across the field at game start.")]
+    public int initialSmallCount = 2;
+
+    [Tooltip("Slowest microbe spin, in degrees per second. Each microbe picks a random speed in this range and a random clockwise/counter-clockwise direction.")]
+    public float minSpinSpeed = 10f;
+
+    [Tooltip("Fastest microbe spin, in degrees per second.")]
+    public float maxSpinSpeed = 50f;
 
     [Tooltip("Steepest fall: an object's downward drift as a fraction of its horizontal speed.")]
     public float fallSpeedRatio = 0.25f;
@@ -32,7 +47,8 @@ public class BrickSpawner : MonoBehaviour
     private Texture2D[] _rodH;
     private Texture2D[] _rodV;
     private Texture2D[] _ball;
-    private float _nextSpawnTime;
+    private float _nextBigTime;
+    private float _nextSmallTime;
     private float _initialSpawnTime;
     private bool _initialDone;
 
@@ -98,7 +114,8 @@ public class BrickSpawner : MonoBehaviour
     {
         CreateSprite();
         LoadMicrobes();
-        _nextSpawnTime = Time.time + firstSpawnDelay;
+        _nextBigTime = Time.time + firstSpawnDelay;
+        _nextSmallTime = Time.time + firstSpawnDelay;
         // Slight delay so BoundaryFitter has fitted the walls to the screen
         // before we place the starting elements relative to them.
         _initialSpawnTime = Time.time + 0.2f;
@@ -112,22 +129,49 @@ public class BrickSpawner : MonoBehaviour
             SpawnInitial();
         }
 
-        if (Time.time >= _nextSpawnTime)
+        // Big formations and small cubes run on independent timers so boosting the
+        // small ones doesn't steal spawns from the big ones.
+        if (Time.time >= _nextBigTime)
         {
-            Spawn();
-            ScheduleNext();
+            SpawnCluster(Formations[Random.Range(0, Formations.Length)](), false);
+            _nextBigTime = Time.time + BigInterval();
         }
+
+        if (Time.time >= _nextSmallTime)
+        {
+            SpawnCluster(new[] { Mk(SkinMode.Round, V(0, 0)) }, true);
+            _nextSmallTime = Time.time + SmallInterval();
+        }
+    }
+
+    // Big formations keep their old effective rate: a tick fired big with
+    // probability (1 - fallingCubeChance), so stretching the base interval by
+    // 1/that probability reproduces the same average gap on a dedicated timer.
+    float BigInterval()
+    {
+        float pBig = Mathf.Clamp01(1f - fallingCubeChance);
+        float scale = pBig > 0.0001f ? 1f / pBig : 1f;
+        return Random.Range(minInterval, maxInterval) * scale;
+    }
+
+    // Small cubes use their old share (fallingCubeChance) boosted by smallSpawnBoost,
+    // so they appear that many times as often while big formations are unchanged.
+    float SmallInterval()
+    {
+        float rate = Mathf.Clamp01(fallingCubeChance) * smallSpawnBoost;
+        float scale = rate > 0.0001f ? 1f / rate : 1f;
+        return Random.Range(minInterval, maxInterval) * scale;
     }
 
     // Populate the arena at the start so it isn't empty: a couple of big
     // formations and a couple of small drifting cubes, spread across the field.
     void SpawnInitial()
     {
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < initialBigCount; i++)
         {
             SpawnCluster(Formations[Random.Range(0, Formations.Length)](), false, true);
         }
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < initialSmallCount; i++)
         {
             SpawnCluster(new[] { Mk(SkinMode.Round, V(0, 0)) }, true, true);
         }
@@ -147,24 +191,6 @@ public class BrickSpawner : MonoBehaviour
         _rodH = Resources.LoadAll<Texture2D>("Microbes/RodH");
         _rodV = Resources.LoadAll<Texture2D>("Microbes/RodV");
         _ball = Resources.LoadAll<Texture2D>("Microbes/Ball");
-    }
-
-    void ScheduleNext()
-    {
-        _nextSpawnTime = Time.time + Random.Range(minInterval, maxInterval);
-    }
-
-    void Spawn()
-    {
-        if (Random.value < fallingCubeChance)
-        {
-            // A single cube (one round microbe) that slowly drifts downward.
-            SpawnCluster(new[] { Mk(SkinMode.Round, V(0, 0)) }, true);
-        }
-        else
-        {
-            SpawnCluster(Formations[Random.Range(0, Formations.Length)](), false);
-        }
     }
 
     void SpawnCluster(Part[] parts, bool falling, bool spread = false)
@@ -258,6 +284,12 @@ public class BrickSpawner : MonoBehaviour
         {
             RenderPart(clusterGO.transform, part, centerCol, centerRow, clusterHealth);
         }
+
+        // Each microbe spins about its centre at a random speed and a random
+        // clockwise/counter-clockwise direction.
+        var spin = clusterGO.AddComponent<SpinMicrobe>();
+        float spinSpeed = Random.Range(minSpinSpeed, maxSpinSpeed);
+        spin.degreesPerSecond = (Random.value < 0.5f ? -1f : 1f) * spinSpeed;
     }
 
     void RenderPart(Transform cluster, Part part, float centerCol, float centerRow, int health)

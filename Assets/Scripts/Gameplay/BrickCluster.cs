@@ -96,14 +96,17 @@ public class BrickCluster : MonoBehaviour
         foreach (Brick brick in bricks)
         {
             var box = brick.GetComponent<BoxCollider2D>();
-            // The brick transform is unscaled (its visual lives on a scaled child),
-            // so the real cell size comes from the collider, not transform.localScale.
-            float halfW = box != null ? box.size.x * brick.transform.lossyScale.x / 2f : 0f;
-            float halfH = box != null ? box.size.y * brick.transform.lossyScale.y / 2f : 0f;
-            minX = Mathf.Min(minX, brick.transform.position.x - halfW);
-            maxX = Mathf.Max(maxX, brick.transform.position.x + halfW);
-            minY = Mathf.Min(minY, brick.transform.position.y - halfH);
-            maxY = Mathf.Max(maxY, brick.transform.position.y + halfH);
+            if (box == null)
+            {
+                continue;
+            }
+            // Use the collider's world AABB so the bounds stay correct even when the
+            // cluster is spinning (the box rotates with it).
+            Bounds b = box.bounds;
+            minX = Mathf.Min(minX, b.min.x);
+            maxX = Mathf.Max(maxX, b.max.x);
+            minY = Mathf.Min(minY, b.min.y);
+            maxY = Mathf.Max(maxY, b.max.y);
         }
 
         if (minX <= _leftBound && direction.x < 0f)
