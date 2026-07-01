@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
@@ -6,10 +7,15 @@ public class ResultController : MonoBehaviour
 {
     public string menuSceneName = "MainMenu";
 
-    private GUIStyle _titleStyle;
-    private GUIStyle _scoreStyle;
-    private GUIStyle _buttonStyle;
+    private RectTransform _menuButton;
+    private RectTransform _pressed;
+    private RectTransform _animButton;
+    private Vector3 _animTarget = Vector3.one;
     private bool _loading;
+    private Font _font;
+
+    private static readonly Vector3 PressedScale = new Vector3(0.92f, 0.92f, 1f);
+    private const float PressLerpSpeed = 16f;
 
     void Awake()
     {
@@ -21,11 +27,31 @@ public class ResultController : MonoBehaviour
             cam.backgroundColor = Color.black;
             cam.transform.position = new Vector3(0f, 0f, -10f);
         }
+
+        _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        BuildUI();
     }
 
-    // The button is drawn with IMGUI but clicks are handled here through the
-    // Input System: IMGUI only receives input from the legacy Input Manager,
-    // which is unavailable when Active Input Handling is "Input System Package".
+    void BuildUI()
+    {
+        var canvasGO = new GameObject("ResultCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        var canvas = canvasGO.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        var scaler = canvasGO.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080f, 1920f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var winner = NewText("Winner", canvasGO.transform, $"Player {GameResult.winner} Wins!", 84, TextAnchor.MiddleCenter);
+        Place(winner.rectTransform, new Vector2(0.5f, 0.66f), new Vector2(1000f, 160f));
+
+        var score = NewText("Score", canvasGO.transform, $"{GameResult.bottomScore} : {GameResult.topScore}", 64, TextAnchor.MiddleCenter);
+        Place(score.rectTransform, new Vector2(0.5f, 0.54f), new Vector2(900f, 120f));
+
+        _menuButton = MakeButton(canvasGO.transform, "Main Menu", new Vector2(0.5f, 0.38f), new Vector2(560f, 150f));
+    }
+
+    // Fire on release (finger lift) over the button rather than the initial press.
     void Update()
     {
         if (_loading)
@@ -33,70 +59,123 @@ public class ResultController : MonoBehaviour
             return;
         }
 
+        AnimatePress();
+
         var pointer = Pointer.current;
-        if (pointer == null || !pointer.press.wasPressedThisFrame)
+        if (pointer == null)
         {
             return;
         }
 
         Vector2 pos = pointer.position.ReadValue();
-        // Pointer origin is bottom-left, GUI rects are top-left. Flip Y.
-        Vector2 guiPos = new Vector2(pos.x, Screen.height - pos.y);
-        if (MenuButtonRect().Contains(guiPos))
+
+        if (pointer.press.wasPressedThisFrame)
         {
-            _loading = true;
-            SceneManager.LoadScene(menuSceneName);
+            _pressed = Hit(_menuButton, pos) ? _menuButton : null;
+            if (_pressed != null)
+            {
+                _animButton = _pressed;
+                _animTarget = PressedScale;
+            }
+            return;
+        }
+
+        if (pointer.press.wasReleasedThisFrame)
+        {
+            if (_pressed != null)
+            {
+                _animButton = _pressed;
+                _animTarget = Vector3.one;
+            }
+            bool onButton = _pressed == _menuButton && Hit(_menuButton, pos);
+            _pressed = null;
+            if (onButton)
+            {
+                _loading = true;
+                SceneManager.LoadScene(menuSceneName);
+            }
         }
     }
 
-    Rect MenuButtonRect()
+    // Eases the currently animating button toward its target scale each frame.
+    void AnimatePress()
     {
-        float w = Screen.width;
-        float h = Screen.height;
-        float btnW = w * 0.55f;
-        float btnH = h * 0.08f;
-        return new Rect(w / 2f - btnW / 2f, h * 0.65f, btnW, btnH);
+        if (_animButton == null)
+        {
+            return;
+        }
+        _animButton.localScale = Vector3.Lerp(_animButton.localScale, _animTarget, PressLerpSpeed * Time.unscaledDeltaTime);
+        if (_animTarget == Vector3.one && (_animButton.localScale - Vector3.one).sqrMagnitude < 0.0001f)
+        {
+            _animButton.localScale = Vector3.one;
+            _animButton = null;
+        }
     }
 
-    void OnGUI()
+    RectTransform MakeButton(Transform parent, string label, Vector2 anchor, Vector2 size)
     {
-        if (_titleStyle == null)
+        var img = NewImage("Btn_" + label, parent);
+        var btnTex = Resources.Load<Texture2D>("menu_button");
+        if (btnTex != null)
         {
-            _titleStyle = new GUIStyle();
-            _titleStyle.alignment = TextAnchor.MiddleCenter;
-            _titleStyle.fontStyle = FontStyle.Bold;
-            _titleStyle.normal.textColor = Color.white;
+            img.sprite = Sprite.Create(btnTex, new Rect(0f, 0f, btnTex.width, btnTex.height),
+                new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(40f, 40f, 40f, 40f));
+            img.type = Image.Type.Sliced;
         }
-
-        if (_scoreStyle == null)
+        else
         {
-            _scoreStyle = new GUIStyle();
-            _scoreStyle.alignment = TextAnchor.MiddleCenter;
-            _scoreStyle.normal.textColor = Color.white;
+            img.color = new Color(0.09f, 0.12f, 0.17f);
         }
+        Place(img.rectTransform, anchor, size);
 
-        if (_buttonStyle == null)
-        {
-            _buttonStyle = new GUIStyle(GUI.skin.button);
-            _buttonStyle.fontStyle = FontStyle.Bold;
-        }
+        var lbl = NewText("Label", img.transform, label, 52, TextAnchor.MiddleCenter);
+        Stretch(lbl.rectTransform);
+        return img.rectTransform;
+    }
 
-        float w = Screen.width;
-        float h = Screen.height;
+    static Image NewImage(string name, Transform parent)
+    {
+        var go = new GameObject(name, typeof(Image));
+        go.transform.SetParent(parent, false);
+        return go.GetComponent<Image>();
+    }
 
-        // All sizes are fractions of the screen so the layout works on any resolution.
-        _titleStyle.fontSize = Mathf.RoundToInt(h * 0.045f);
-        _scoreStyle.fontSize = Mathf.RoundToInt(h * 0.035f);
+    Text NewText(string name, Transform parent, string content, int fontSize, TextAnchor align)
+    {
+        var go = new GameObject(name, typeof(Text));
+        go.transform.SetParent(parent, false);
+        var txt = go.GetComponent<Text>();
+        txt.text = content;
+        txt.font = _font;
+        txt.fontSize = fontSize;
+        txt.alignment = align;
+        txt.color = Color.white;
+        txt.supportRichText = true;
+        return txt;
+    }
 
-        string winnerText = $"Player {GameResult.winner} Wins!";
-        string scoreText = $"{GameResult.bottomScore} : {GameResult.topScore}";
+    static Sprite ToSprite(Texture2D tex)
+    {
+        return Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+    }
 
-        float blockW = w * 0.8f;
-        GUI.Label(new Rect(w / 2f - blockW / 2f, h * 0.28f, blockW, h * 0.08f), winnerText, _titleStyle);
-        GUI.Label(new Rect(w / 2f - blockW / 2f, h * 0.45f, blockW, h * 0.06f), scoreText, _scoreStyle);
+    static void Place(RectTransform rt, Vector2 anchor, Vector2 size)
+    {
+        rt.anchorMin = rt.anchorMax = anchor;
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = size;
+    }
 
-        Rect btnRect = MenuButtonRect();
-        _buttonStyle.fontSize = Mathf.RoundToInt(btnRect.height * 0.4f);
-        GUI.Button(btnRect, "Main Menu", _buttonStyle);
+    static void Stretch(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+    }
+
+    static bool Hit(RectTransform rt, Vector2 screenPos)
+    {
+        return rt != null && RectTransformUtility.RectangleContainsScreenPoint(rt, screenPos, null);
     }
 }
