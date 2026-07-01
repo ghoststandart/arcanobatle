@@ -18,6 +18,9 @@ public class GameSetup : MonoBehaviour
         SetupWallColliders();
         SetupBallPhysics();
         LinkPaddles();
+
+        // In-game menu button (top of screen) + pause/exit overlay.
+        new GameObject("PauseMenu", typeof(PauseMenu));
     }
 
     void CreateWhiteSprite()
